@@ -5,12 +5,8 @@
 * **Source URL:** https://urn.nb.no/URN:NBN:no-nb_digibok_2006120500031 
 * **Project:** https://dugnad.gbif.no/nb_NO/project/huitfeldt-kaas
 * **Project setup:** https://github.com/gbif-norway/dugnad/blob/master/projects/huitfeldt-kaas.yaml
+* **Metadata:** https://gbif.vm.ntnu.no/ipt/resource?r=huitfeldt-kaas_1918  
 -----------------------------------------------------------
 
-# Description
-
-# publishing organisation
-
-# creator(s)
-
 # 
+
