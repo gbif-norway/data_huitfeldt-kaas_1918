@@ -17,10 +17,8 @@ inndata <- fromJSON(paste0("https://dugnad.gbif.no/nb_NO/project/",prosjektid,"/
 
 # remove prefix "data.*" from data.frame 
 names(inndata) <-  sub("data.","",names(inndata))
-# remove "." rom marked.pages field name
-inndata <- inndata %>% rename(marked_pages=marked.pages)
 
-# store as .csv in folder ~/data/raw_data/
+# store as .zip file in folder ~/data/raw_data/
 write.csv(inndata,"./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv",row.names = FALSE)
 
 zip(zipfile = "./data/raw_data/transcriptions_huitfeldt-kaas_1918", 

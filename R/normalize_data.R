@@ -8,7 +8,9 @@
 library(dplyr)
 
 # load data
-inndata <- read.csv("./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv")
+tmp <- tempdir()
+inndata <- read.csv(unzip("./data/raw_data/transcriptions_huitfeldt-kaas_1918.zip",
+                          exdir=tmp))
 
 # create fieldNumber to use as temporary match between occurrence and event table
 inndata$fieldNumber <- paste0("NTNU-VM_HK_2019_",inndata$locationID)
@@ -17,3 +19,4 @@ inndata$fieldNumber <- paste0("NTNU-VM_HK_2019_",inndata$locationID)
 
 event <- inndata %>%
   select(locality,fieldNumber,project,verbatimElevation,footprintWKT,locationID,fieldNumber)
+
