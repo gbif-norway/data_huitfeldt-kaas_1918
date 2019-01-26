@@ -13,7 +13,7 @@
 
 1. Data where captured (digitalized) from the source publication using the annotation tool "Dugnadsportalen" (https://github.com/gbif-norway/dugnad). The publication describes the species inventory of freshwater lakes (and some streams) in Norway. Locations of each species are listed in separate chapters and organized by municipality and county. Names of waterbodies listed in the publication where mapped to the current offical Norwegian gazetteer of lacustrine waterbodies curated by the The Norwegian Water Resources and Energy Directorate "Innsjødatabase" downloaded 2018-XX-XX. Due to changes in naming conventions, spelling differences etc. the matching where done by manuall curation. The following field (description | DwC mapping in paranteses) from this gazzetteer where linked to orginal occurrences; vatnLnr (offical Norwegian lake running number | dwc:locationID), name (current official name of waterbody | dwc:waterBody), Shape (polygon geometry of waterbody outline | dwc:footprintWKT). Orginal names as provided by the publication was stored in the field dwc:verbatimeLocality when entered by the user. 
 
-2. Data where downloaded from "Dugnadsportalen" and parsed to tabular format (see R script;)
+2. **Download data** from "Dugnadsportalen" and parsed to tabular format (see R script; ./R/downoad_and_parse_data.R - this repository). Data are now in flat-file format.
 
-3. 
+3. Normalize data into event core table and occurrence 
 
