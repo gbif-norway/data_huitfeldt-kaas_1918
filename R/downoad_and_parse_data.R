@@ -15,8 +15,12 @@ prosjektid <- "huitfeldt-kaas"
 inndata <- fromJSON(paste0("https://dugnad.gbif.no/nb_NO/project/",prosjektid,"/export.json"),
                     flatten = TRUE)
 
+# remove prefix "data.*" from data.frame 
+names(inndata) <-  sub("data.","",names(inndata))
+# remove "." rom marked.pages field name
+inndata <- inndata %>% rename(marked_pages=marked.pages)
 
 # store as .csv in folder ~/data/raw_data/
-write.csv(inndata,"./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv")
+write.csv(inndata,"./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv",row.names = FALSE)
 
                     
