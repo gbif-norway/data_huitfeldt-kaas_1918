@@ -23,4 +23,9 @@ inndata <- inndata %>% rename(marked_pages=marked.pages)
 # store as .csv in folder ~/data/raw_data/
 write.csv(inndata,"./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv",row.names = FALSE)
 
+zip(zipfile = "./data/raw_data/transcriptions_huitfeldt-kaas_1918", 
+    files = "./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv")
+file.remove("./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv")
+
+
                     
