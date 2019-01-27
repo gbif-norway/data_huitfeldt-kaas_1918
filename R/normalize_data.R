@@ -70,7 +70,8 @@ event <- left_join(event,new_eventIDs,by="fieldNumber")
 
 # add lat/long
 lake_centroids <- read.csv("./data/raw_data/lakes_NO_centroids.csv",stringsAsFactors = FALSE) 
-event <- left_join(event,lake_centroids,by="fieldNumber")
+event$tmp_vatnLnr <- as.numeric(str_split_fixed(event$locationID,":",n=3)[,3]) # create tmp variable with vatnLnr
+event <- left_join(event,lake_centroids,by=c("tmp_vatnLnr" = "vatnLnr"))
 
 # adding terms with values replicated throughout dataset
 event$year <- "1918"
