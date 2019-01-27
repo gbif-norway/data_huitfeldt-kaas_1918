@@ -24,7 +24,7 @@ inndata$fieldNumber <- paste0("NTNU-VM_HK_2019_",inndata$locationID)
 # 2. Normalize data
 #................................................................................
 
-# create event and occurrence data
+# create event and occurrence data and remove duplicatates from events
 
 event <- inndata %>%
   select(locality,project,verbatimElevation,footprintWKT,locationID,fieldNumber) %>%
@@ -50,7 +50,6 @@ for(i in 1:dim(event)[1]){
     fieldNumber_existing <- append(fieldNumber_existing,event$fieldNumber[i])
     eventID_temp <- UUIDgenerate()
     eventID_existing <- append(eventID_existing,eventID_temp)
-    
   }
 }
 new_eventIDs <- data.frame(eventID=eventID_existing,fieldNumber=fieldNumber_existing)
@@ -59,9 +58,41 @@ new_eventIDs <- data.frame(eventID=eventID_existing,fieldNumber=fieldNumber_exis
 event <- left_join(event,new_eventIDs,by="fieldNumber")
 
 
+
+
 #.................................................................................
-# 4. resolving scientific names 
+# 4. DwC-mapping events  
 #................................................................................
+
+
+
+# Events........................................................................
+
+# add lat/long
+lake_centroids <- read.csv("./data/raw_data/lakes_NO_centroids.csv",stringsAsFactors = FALSE) 
+event <- left_join(event,lake_centroids,by="fieldNumber")
+
+# adding terms with values replicated throughout dataset
+event$year <- "1918"
+event$eventDate <- "1902/1918"
+event$recordedBy <- "Huitfelt-Kaas"
+event$samplingProtocol <- "survey_questionary"
+event$countryCode <- "NO"
+# event$coordinateUncertaintyInMeters <- May be estimated as a function of maximum lake fetch?
+event$geodeticDatum <- "EPSG:4326"
+event$footprintSRS <- 'GEOGCS["GCS_WGS_1984", DATUM["D_WGS_1984", SPHEROID["WGS_1984",6378137,298.257223563]], PRIMEM["Greenwich",0], UNIT["Degree",0.0174532925199433]]'
+event$georeferenceProtocol <- "Occurrence represent presence/absence in waterbody. Coordinates are centroid of waterbody. Source of geometries are The Norwegian Water Resources and Energy Directorate"
+event$institutionCode <- "NTNU-VM"
+
+
+#.................................................................................
+# 5. DwC-mapping occurrences  
+#................................................................................
+
+# Add eventIDs
+occurrence <- left_join(occurrence,event[c("eventID","fieldNumber")])
+
+# Resolve scientific names.......................................................
 datasetKeyUUID="a6c6cead-b5ce-4a4e-8cf5-1542ba708dec" # using Artsnavnebasen as source
 
 # first clean up name list in input data with some known errors, and 
@@ -70,12 +101,12 @@ occurrence$taxonRemarks <- paste0("Named '", occurrence$scientificName, "' in so
 occurrence <- occurrence %>% 
   mutate(
     scientificName=case_when(
-    scientificName == "Salmo alpinus" ~ "Salvelinus alpinus",
-    scientificName == "æøå" ~ "",
-    scientificName == "" ~ "",
-    TRUE ~ scientificName
+      scientificName == "Salmo alpinus" ~ "Salvelinus alpinus",
+      scientificName == "æøå" ~ "",
+      scientificName == "" ~ "",
+      TRUE ~ scientificName
     )
-) %>%
+  ) %>%
   rename(scinames=scientificName)
 
 scinames <- unique(occurrence$scinames) # vector of unique sci-names in dataset
@@ -97,41 +128,17 @@ resolved_names <- resolved_names %>%
 
 occurrence <- left_join(occurrence,resolved_names)
 
-
-#.................................................................................
-# 5. Mapp 
-#................................................................................
+# Add terms with common value to whole dataset 
+occurrence$basisOfRecord <- "humanObservation"
 
 
-
-# Events........................................................................
-
-# add lat/long
-lake_centroids <- read.csv("./data/raw_data/lakes_NO_centroids.csv",stringsAsFactors = FALSE) 
-event2 <- left_join(event,lake_centroids,by="fieldNumber")
-
-# adding terms with values replicated throughout dataset
-event2$year <- "1918"
-event2$eventDate <- "1902/1918"
-event2$recordedBy <- "Huitfelt-Kaas"
-event2$samplingProtocol <- "survey_questionary"
-event2$countryCode <- "NO"
-event2$geodeticDatum <- "EPSG:4326"
-event2$footprintSRS <- 'GEOGCS["GCS_WGS_1984", DATUM["D_WGS_1984", SPHEROID["WGS_1984",6378137,298.257223563]], PRIMEM["Greenwich",0], UNIT["Degree",0.0174532925199433]]'
-event2$georeferenceProtocol <- "Occurrence represent presence/absence in waterbody. Coordinates are centroid of waterbody. Source of geometries are The Norwegian Water Resources and Energy Directorate"
-
-
-
-
-
-# Occurrences......................................................................
 
 
 #.................................................................................
 # X. save and exit  
 #................................................................................
 
-write.csv(eventIDs,"./data/raw_data/eventIDs.csv",row.names = FALSE)
+write.csv(new_eventIDs,"./data/raw_data/eventIDs.csv",row.names = FALSE)
 write.csv(occurrence,"./data/mapped_data/occurrence.csv",row.names = FALSE)
 write.csv(event,"./data/mapped_data/event.csv",row.names = FALSE)
 
