@@ -15,7 +15,7 @@
 
 2. **Download data** from "Dugnadsportalen" and parsed to tabular format (see R script; "./R/downoad_and_parse_data.R" - this repository). Data are now in flat-file format.
 
-3. **Normalize data** into event core table and occurrence extention table  (see R script; "./R/normalize_data.R"" - this repository). Observations from each lake constitutes an sampling event. Theres is no GUID (uri:uuid) set for events in the raw-data. LocationID (vatn_lnr) is used together with prefix as fieldNumber to create an id unique for the dataset (dwc:fieldNumber). EventIDs (uri:uuid) are generated and stored in table ("./data/raw_data/eventIDs.csv"). Repeated downloads of source data are checked by this table using fieldNumber and assigned new eventID, or reusing existing. Each row in the orginal raw data pre-assigned an occurrenceID (uri:uuid) from Dugnadsportalen.
+3. **Normalize data** into event core table and occurrence extention table  (see R script; "./R/normalize_data.R"" - this repository). Observations from each lake constitutes an sampling event. Theres is no GUID (uri:uuid) set for events in the raw-data. LocationID (vatn_lnr) is used together with prefix as fieldNumber to create an id unique for the dataset (dwc:fieldNumber). EventIDs (urn:uuid) are generated and stored in table ("./data/raw_data/eventIDs.csv"). Repeated downloads of source data are checked by this table using fieldNumber and assigned new eventID, or reusing existing. Each row in the orginal raw data pre-assigned an occurrenceID (urn:uuid) from Dugnadsportalen.
 
 4. **DwC mapping** are done in several steps to the event and occurrence tables, respectively (see R script; "./R/dwc_mapping.R"" - this repository)
 
