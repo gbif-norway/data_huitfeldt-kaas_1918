@@ -1,13 +1,47 @@
-# part III visualization 
+##############################################################
+# Visualization 
+#
+# Small script to flatten occurrences and events and visualize
+##############################################################
+
 library(dplyr)
+library(mapview)
+library(sf)
 
-# 1. load and merge occurrence and event tables
+# 1. load and merge occurrence and event tables if not existing in memory
+if(!exists("occurrence")) {
+  occurrence <- read.csv("./data/mapped_data/occurrence.csv")
+}
 
-occurrence <- read.csv("./data/mapped_data/occurrence.csv")
-event <- read.csv("./data/mapped_data/event.csv")
+if(!exists("event")) {
+  event <- read.csv("./data/mapped_data/event.csv")
+}
 
-HK_data <- left_join(occurrence,event,by="eventID")
+# flatten file and remove occurrences missing coordinates (caused by lakes missing in gazzeteer)
+HK_data_flattend <- left_join(occurrence,event,by="eventID") %>%
+  filter(!is.na(decimalLatitude) | !is.na(decimalLongitude))
 
 # HK_data <- HK_data %>% select("variables of interest") # reducing number of variables for plotting 
-write.csv(HK_data,"./data/mapped_data/HK_data.csv",
+write.csv(HK_data_flattend,"./data/mapped_data/HK_data_flattend.csv",
           row.names = FALSE, na = "")
+
+# select variables for viewing in map... 
+HK_data_tmp <- HK_data_flattend %>% select(decimalLongitude,decimalLatitude,occurrenceID,eventID,
+                                           genus,scientificName,bibliographicCitation,establishmentMeans,
+                                           occurrenceStatus)
+
+HK_sf = st_as_sf(HK_data_tmp, coords = c("decimalLongitude", "decimalLatitude"), 
+                 crs = 4326)
+
+# View map - species by species - replace sci name with what you want
+# see list of species names by running unique(HK_sf$scientificName)
+mapview::mapview(HK_sf[HK_sf$scientificName=="Salvelinus alpinus",],zcol=c("occurrenceStatus"))
+
+
+
+
+
+
+
+
+

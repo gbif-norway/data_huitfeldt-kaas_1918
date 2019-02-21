@@ -11,11 +11,14 @@ library(stringr)
 library(rgbif)
 
 #...............................................................................
-# 1. load data
+# 1. load data (if not existing in memory)
 #...............................................................................
-tmp <- tempdir()
-inndata <- read.csv(unzip("./data/raw_data/transcriptions_huitfeldt-kaas_1918.zip",
-                          exdir=tmp),stringsAsFactors=FALSE)
+if(!exists("inndata")) {
+  tmp <- tempdir()
+  inndata <- read.csv(unzip("./data/raw_data/transcriptions_huitfeldt-kaas_1918.zip",
+                            exdir=tmp),stringsAsFactors=FALSE)
+}
+
 
 # create fieldNumber to use as temporary match between occurrence and event table
 inndata$fieldNumber <- paste0("NTNU-VM_HK_2019_",inndata$locationID)
