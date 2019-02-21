@@ -108,12 +108,23 @@ occurrence <- occurrence %>%
   mutate(
     scientificName=case_when(
       scientificName == "Salmo alpinus" ~ "Salvelinus alpinus",
+      scientificName == "Leuciscus erythropthalmus" ~ "Scardinius erythrophthalmus",
+      scientificName == "Lucioperca lucioperca" ~ "Sander lucioperca", 
+      scientificName == "Leuciscus grislagine" ~ "Leuciscus leuciscus", 
+      scientificName == "Aspius alburnus" ~ "Alburnus alburnus", 
+      scientificName == "Cottus gobio v. poecilopus" ~ "Cottus", 
+      scientificName == "Abramis blicca" ~ "Blicca bjoerkna", 
+      scientificName == "Leuciscus ritulus" ~ "Rutilus rutilus", 
+      scientificName == "Gastoresteus pingitius" ~ "Pungitius pungitius",
+      scientificName == "Phoxinus aphya" ~ "Phoxinus phoxinus",
+      scientificName == "Petromyzon fluviatilis" ~ "Lampetra fluviatilis",
       scientificName == "æøå" ~ "",
-      scientificName == "" ~ "",
+      scientificName == "-" ~ "",
       TRUE ~ scientificName
     )
-  ) %>%
-  rename(scinames=scientificName)
+  ) 
+
+occurrence$scinames <- occurrence$scientificName
 
 scinames <- unique(occurrence$scinames) # vector of unique sci-names in dataset
 scinames <- scinames[!scinames==""]

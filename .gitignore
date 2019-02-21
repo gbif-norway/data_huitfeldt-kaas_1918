@@ -35,3 +35,9 @@ vignettes/*.pdf
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
 .Rproj.user
+
+# files genereted by script and to large to sync to github
+transcriptions_huitfeldt-kaas_1918.zip
+HK_data.csv
+occurrence.csv
+event.csv
