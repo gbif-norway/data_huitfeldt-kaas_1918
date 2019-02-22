@@ -249,8 +249,18 @@ occurrence2 <- bind_rows(occurrence2,occ_absent)
 # X. save and exit  
 #................................................................................
 
+
+
+# update ID files (remember to push to repository if doing this in producion line)
 write.csv(new_eventIDs,"./data/raw_data/eventIDs.csv",row.names = FALSE)
 write.csv(occurrenc_absence_IDs,"./data/raw_data/occurrenc_absence_IDs.csv",row.names = FALSE)
+
+
+# Save mapped data, create folder "./data/mapped_data" if not existing
+
+if(!"mapped_data" %in% (list.files("./data/"))) {
+  dir.create(file.path("./data/mapped_data"))
+}
 
 write.csv(occurrence2,"./data/mapped_data/occurrence.csv",
           row.names = FALSE, na = "")
