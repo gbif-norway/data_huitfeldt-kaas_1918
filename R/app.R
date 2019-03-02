@@ -12,12 +12,14 @@ library(dplyr)
 library(mapview)
 library(sf)
 library(leaflet)
+library(stringr)
 
 HK_sf <- readRDS(file = "../data/mapped_data/HK_sf.rds")
-HK_sf_tmp <- HK_sf[HK_sf$scientificName=="Esox lucius",]
 HK_species <- as.character(unique(HK_sf$scientificName))
 
-# Define UI for application that draws a histogram
+#-----------------------------------------------------------
+# Define UI for application 
+#---------------------------------------------------------
 ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
                  
                  tabPanel("Kart",
@@ -49,30 +51,57 @@ ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
   tabPanel("Info")
 )
 
+#--------------------------------------------------------------------------
+# Define server logic
+#--------------------------------------------------------------------------
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  # plot data
+  # create leaflet map
   output$test <- renderLeaflet({
     
+    # filter on species
     HK_sf_tmp <- HK_sf[HK_sf$scientificName==input$Velg_art,]
     HK_sf_tmp <- HK_sf_tmp %>% 
       arrange(occurrenceStatus)
     
-    pal <- colorFactor(c("grey", "red"), domain = c("absent", "present"))
+    # make pop-up
     
+    HK_sf_tmp$fravaer <- ifelse(HK_sf_tmp$occurrenceStatus=="absent","Ikkje registrert","Tilstades")
+    HK_sf_tmp$side <- str_sub(HK_sf_tmp$bibliographicCitation,start=-3,end=-1)
+                                      
+    HK_sf_tmp$popup <- ifelse(HK_sf_tmp$occurrenceStatus=="present",
+                              paste0("<strong>",HK_sf_tmp$locality,"</strong>",
+                              "<br><i>",HK_sf_tmp$scientificName," - ",HK_sf_tmp$fravaer,"</i>",
+                              "<br><i>Vatn_lnr: </i>",HK_sf_tmp$tmp_vatnLnr,
+                              "<br><i>Orginalt lokalitetsnavn: </i>",HK_sf_tmp$verbatimLocality,
+                              "<br><i>Kommentar lokalitet: </i>",HK_sf_tmp$occurrenceRemarks,
+                              "<br><i>Siderefferanse: </i>",HK_sf_tmp$side,
+                              "<br><i>observasjonsID: </i>",HK_sf_tmp$occurrenceID,
+                              "<br><strong>Klikk <a href=","https://goo.gl/forms/M9mZ5FtORB97K6dx2 target=blank",">her</a> for og raportere feil</strong>"),
+                              paste0("<strong>",HK_sf_tmp$locality,"</strong>",
+                                     "<br><i>",HK_sf_tmp$scientificName," - ",HK_sf_tmp$fravaer,"</i>",
+                                     "<br><i>Vatn_lnr: </i>",HK_sf_tmp$tmp_vatnLnr,
+                                     "<br><i>observasjonsID: </i>",HK_sf_tmp$occurrenceID)
+    )
+                              
+   
+    
+    # colour palette for points
+    pal <- colorFactor(c("grey", "red"), domain = c("Ikkje registrert", "Tilstades"))
+    
+    # create leaflet map
     leaflet(data = HK_sf_tmp) %>% addTiles() %>%
-    addCircleMarkers(popup = ~as.character(occurrenceID), 
-                     radius = ~ifelse(occurrenceStatus == "absent", 5, 5),
-                     label = ~as.character(occurrenceStatus),
-                     color = ~pal(occurrenceStatus),
+    addCircleMarkers(popup = ~as.character(popup), 
+                     radius = ~ifelse(fravaer == "Ikkje registrert", 5, 5),
+                     label = ~as.character(locality),
+                     color = ~pal(fravaer),
                       stroke = FALSE, 
-                      fillOpacity = ~ifelse(occurrenceStatus == "absent", 1, 1)) %>%
+                      fillOpacity = ~ifelse(fravaer == "Ikkje registrert", 1, 1)) %>%
       addLegend(position = c("bottomright"), pal = pal, 
-                values = ~as.character(occurrenceStatus), 
+                values = ~as.character(fravaer), 
                 opacity = 1,
-                title = "presence/absence")
+                title = "Tilstades")
   })
   
 }

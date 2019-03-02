@@ -19,7 +19,8 @@ if(!exists("event")) {
 
 # flatten file and remove occurrences missing coordinates (caused by lakes missing in gazzeteer)
 HK_data_flattend <- left_join(occurrence,event,by="eventID") %>%
-  filter(!is.na(decimalLatitude) | !is.na(decimalLongitude))
+  filter(!is.na(decimalLatitude) | !is.na(decimalLongitude)) %>%
+  select(-footprintSRS)
 
 # HK_data <- HK_data %>% select("variables of interest") # reducing number of variables for plotting 
 write.csv(HK_data_flattend,"./data/mapped_data/HK_data_flattend.csv",
@@ -29,7 +30,8 @@ write.csv(HK_data_flattend,"./data/mapped_data/HK_data_flattend.csv",
 HK_data_tmp <- HK_data_flattend %>% select(decimalLongitude,decimalLatitude,occurrenceID,eventID,
                                            genus,scientificName,bibliographicCitation,establishmentMeans,
                                            occurrenceStatus,locationRemarks,tmp_vatnLnr,verbatimLocality,
-                                           establishmentMeans,locality,bibliographicCitation)
+                                           establishmentMeans,locality,bibliographicCitation,
+                                           occurrenceRemarks)
 
 HK_sf = st_as_sf(HK_data_tmp, coords = c("decimalLongitude", "decimalLatitude"), 
                  crs = 4326)
