@@ -28,10 +28,13 @@ write.csv(HK_data_flattend,"./data/mapped_data/HK_data_flattend.csv",
 # select variables for viewing in map... 
 HK_data_tmp <- HK_data_flattend %>% select(decimalLongitude,decimalLatitude,occurrenceID,eventID,
                                            genus,scientificName,bibliographicCitation,establishmentMeans,
-                                           occurrenceStatus)
+                                           occurrenceStatus,locationRemarks,tmp_vatnLnr,verbatimLocality,
+                                           establishmentMeans,locality,bibliographicCitation)
 
 HK_sf = st_as_sf(HK_data_tmp, coords = c("decimalLongitude", "decimalLatitude"), 
                  crs = 4326)
+saveRDS(HK_sf, file = "./data/mapped_data/HK_sf.rds")
+
 
 # View map - species by species - replace sci name with what you want
 # see list of species names by running unique(HK_sf$scientificName)
