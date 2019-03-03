@@ -16,7 +16,6 @@ library(stringr)
 
 HK_sf <- readRDS(file = "./data/mapped_data/HK_sf.rds")
 HK_species <- as.character(unique(HK_sf$scientificName)) 
-HK_species <- HK_species[HK_species!=""]
 
 #-----------------------------------------------------------
 # Define UI for application 
