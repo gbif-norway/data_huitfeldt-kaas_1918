@@ -1,9 +1,17 @@
 # Updating local data-cache of Huitfelt-Kaas 1918 digitalization
 # NB all paths relative to project directory (run from root of project folder)
 
+
+#---------------
+# update data
+#-------------
 source("./R/1_downoad_and_parse_data.R")
 source("./R/2_normalize_data.R")
 source("./R/3_visulize_occurrences.R")
+
+#----------------
+# push chances 
+#--------------------
 
 # Push to github to sync eventID after updating
 # Assumes installed and linked to correct repro 
