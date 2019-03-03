@@ -35,7 +35,7 @@ ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
    
    # input
   absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
+                draggable = TRUE, top = 100, left = "auto", right = 20, bottom = "auto",
                 width = 330, height = "auto",
                 h2("Visning"),
         selectInput("Velg_art", 
