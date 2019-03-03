@@ -1,5 +1,4 @@
 # Updating local data-cache of Huitfelt-Kaas 1918 digitalization
-
 # NB all paths relative to project directory
 
 source("./R/1_downoad_and_parse_data.R")
