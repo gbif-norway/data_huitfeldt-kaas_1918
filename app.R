@@ -13,9 +13,11 @@ library(mapview)
 library(sf)
 library(leaflet)
 library(stringr)
+library(DT)
 
 HK_sf <- readRDS(file = "./data/mapped_data/HK_sf.rds")
 HK_species <- as.character(unique(HK_sf$scientificName))
+HK_species <- HK_species[HK_species!=""]
 
 #-----------------------------------------------------------
 # Define UI for application 
@@ -41,13 +43,20 @@ ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
         selectInput("Velg_art", 
                     label = "Vel art",
                     choices = HK_species,
-                    selected = HK_species[1])
+                    selected = "Esox lucius"),
+        br(),
+        tags$p("Output from digitalization of", tags$a(href="https://urn.nb.no/URN:NBN:no-nb_digibok_2006120500031", "Huitfelt-Kaas 1918"), "using",
+        tags$a(href="https://dugnad.gbif.no/nb_NO/project/huitfeldt-kaas", "dugnadsportalen"))
+        
       )
                           ),
   tags$div(id="cite",
            'Data frå ', tags$em('Ferskvandsfiskenes utbredelse og indvandring i Norge: med et tillæg om krebsen'), ' av Hartvig Huitfeldt-Kaas (Centraltrykkeriet, Krisistiania 1918).'
   )
                  ),
+  tabPanel("Data",
+           # table
+           DT::dataTableOutput("table")),
   tabPanel("Info")
 )
 
@@ -56,6 +65,14 @@ ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
 #--------------------------------------------------------------------------
 
 server <- function(input, output) {
+  
+  # create DT table for output 
+  output$table <- DT::renderDataTable(DT::datatable(
+    {
+      data <- HK_sf
+      data
+    }
+    ,rownames= FALSE))
   
   # create leaflet map
   output$test <- renderLeaflet({
