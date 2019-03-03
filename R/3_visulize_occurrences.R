@@ -40,7 +40,7 @@ saveRDS(HK_sf, file = "./data/mapped_data/HK_sf.rds")
 
 # View map - species by species - replace sci name with what you want
 # see list of species names by running unique(HK_sf$scientificName)
-mapview::mapview(HK_sf[HK_sf$scientificName=="Salvelinus alpinus",],zcol=c("occurrenceStatus"))
+# mapview::mapview(HK_sf[HK_sf$scientificName=="Salvelinus alpinus",],zcol=c("occurrenceStatus"))
 
 
 

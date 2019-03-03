@@ -12,9 +12,13 @@ library(dplyr)
 library(stringr)
 
 # download data and parse json to data.frame 
+
 prosjektid <- "huitfeldt-kaas"
-inndata <- fromJSON(paste0("https://dugnad.gbif.no/nb_NO/project/",prosjektid,"/export.json"),
-                    flatten = TRUE)
+tmp <- tempfile()
+download.file(url=paste0("https://dugnad.gbif.no/nb_NO/project/",prosjektid,"/export.json"),
+              destfile = tmp)
+
+inndata <- fromJSON(tmp,flatten = TRUE)
 
 # remove prefix "data.*" from data.frame 
 names(inndata) <-  sub("data.","",names(inndata))

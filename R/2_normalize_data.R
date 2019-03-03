@@ -244,7 +244,7 @@ occ_absent <- occ_absent %>%
   select(-tmp)
 
 occurrence2 <- bind_rows(occurrence2,occ_absent)        
-        
+occurrence <- occurrence2
 #.................................................................................
 # X. save and exit  
 #................................................................................
@@ -262,7 +262,7 @@ if(!"mapped_data" %in% (list.files("./data/"))) {
   dir.create(file.path("./data/mapped_data"))
 }
 
-write.csv(occurrence2,"./data/mapped_data/occurrence.csv",
+write.csv(occurrence,"./data/mapped_data/occurrence.csv",
           row.names = FALSE, na = "")
 write.csv(event,"./data/mapped_data/event.csv",
           row.names = FALSE, na = "")
