@@ -140,11 +140,12 @@ for(i in 1:length(scinames)){
   resolved_names <- bind_rows(resolved_names,as.data.frame(output))
 }
 resolved_names$scinames <- scinames
+resolved_names$taxonRank <- resolved_names$rank
 
 resolved_names <- resolved_names %>% 
   select(scientificName,kingdom,phylum,order,family,
-         genus,taxonID,scinames,rank) %>%
-  rename(taxonRank=rank)
+         genus,taxonID,scinames,taxonRank)
+
 
 occurrence <- left_join(occurrence,resolved_names)
 
