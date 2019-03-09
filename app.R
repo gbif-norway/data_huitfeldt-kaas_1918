@@ -53,7 +53,9 @@ ui <- navbarPage("Ferskvassfisk i Noreg anno 1918", id="nav",
   tabPanel("Data",
            # table
            DT::dataTableOutput("table")),
-  tabPanel("Info")
+  tabPanel("Info",
+           tags$p("Beskrivelse kommer....")
+  )
 )
 
 #--------------------------------------------------------------------------
