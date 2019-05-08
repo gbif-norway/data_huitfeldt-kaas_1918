@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# large files (i.e. .csv)
+.csv
+
 # Session Data files
 .RData
 
@@ -36,10 +39,12 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 
-# files genereted by script and to large to sync to github
+# files genereted by script and to large to sync to github - these are stored in another repository
 transcriptions_huitfeldt-kaas_1918.csv
 transcriptions_huitfeldt-kaas_1918.zip
 HK_data_flattend.csv
 occurrence.csv
 event.csv
 HK_sf.rds
+eventIDs.csv
+occurrenc_absence_IDs.csv
