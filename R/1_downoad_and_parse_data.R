@@ -67,6 +67,8 @@ inndata$locationID[inndata$locationID=="NVE:vatnLnr:1740"] <- "NVE:vatnLnr:1739"
 #................................................................................
 # store as .zip file in folder ~/data/raw_data/
 #................................................................................
+dir.create("./data/", showWarnings = FALSE)
+dir.create("./data/raw_data/", showWarnings = FALSE)
 
 write.csv(inndata,"./data/raw_data/transcriptions_huitfeldt-kaas_1918.csv",row.names = FALSE)
 
