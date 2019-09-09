@@ -48,3 +48,6 @@ event.csv
 HK_sf.rds
 eventIDs.csv
 occurrenc_absence_IDs.csv
+
+# ignore all data files
+data/*

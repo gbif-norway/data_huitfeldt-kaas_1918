@@ -11,7 +11,7 @@ library(stringr)
 library(rgbif)
 
 #...............................................................................
-# 1. load data (if not existing in memory)
+# 1. load data (if not already existing in memory)
 #...............................................................................
 if(!exists("inndata")) {
   tmp <- tempdir()
@@ -23,56 +23,77 @@ if(!exists("inndata")) {
 # create fieldNumber to use as temporary match between occurrence and event table
 inndata$fieldNumber <- paste0("NTNU-VM_HK_2019_",inndata$locationID)
 
+
+#...............................................................................
+# 2. Some data-cleaning before further processing 
+#...............................................................................
+
+# remove some bogus occurrences 
+inndata <- inndata %>%
+  filter(!scientificName %in% c("-","æøå",""))
+
+# remove records with missing location
+inndata <- inndata %>%
+  filter(!locationID=="")
+
+# remove dupclited occurrences (i.e. duplicated transcriptions of a species in a given location)
+tmp <- inndata %>%
+  select(locationID,scientificName) %>%
+  mutate(not_unique = duplicated(.))
+
+inndata$remove_not_unique <- tmp$not_unique
+
+inndata <- inndata %>%
+  filter(remove_not_unique==FALSE) %>%
+  select(-remove_not_unique)
+
 #.................................................................................
 # 2. Normalize data
 #................................................................................
 
-# create event and occurrence data and remove duplicatates from events
+# create event and remove duplicatates from events
 
 event <- inndata %>%
   select(locality,project,verbatimElevation,footprintWKT,locationID,fieldNumber) %>%
   distinct()
-occurrence <- inndata %>%
-  select(-locality,-project,-verbatimElevation,-footprintWKT,-locationID)
+
+# remove duplicated locations (lakes)
+remove <- event %>%
+  select(locationID) %>%
+  mutate(duplicates=duplicated(.)) 
+
+event$duplicated <- remove$duplicates
+
+event <- event %>%
+  filter(duplicated==FALSE)
+
 
 #.................................................................................
 # 3. Add GUID (uri:uuid) as eventID
 #................................................................................
 
+
+
 # import eventID table
-# check if fieldNumber is present in eventIDs table,
-# if not, add UUID
+# The event ID table is pre-sett with a fixed / immutable eventID for every possible fieldNumber/location 
+# (i.e. every lake in Norway)
 
-eventIDs <- read.csv("./data/raw_data/eventIDs.csv",stringsAsFactors=FALSE)
-eventID_existing <- eventIDs$eventID
-fieldNumber_existing <- eventIDs$fieldNumber
-
-for(i in 1:dim(event)[1]){
-  if(event$fieldNumber[i] %in% fieldNumber_existing==FALSE) {
-    
-    fieldNumber_existing <- append(fieldNumber_existing,event$fieldNumber[i])
-    eventID_temp <- UUIDgenerate()
-    eventID_existing <- append(eventID_existing,eventID_temp)
-  }
-}
-new_eventIDs <- data.frame(eventID=eventID_existing,fieldNumber=fieldNumber_existing)
+event_id_url <- "https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/3540f83d-14b4-406b-896a-faf54eaf404300ddf118-d773-4f53-b220-a5c3c861ebe56738f141-d8f8-45e7-bc1f-7dbf8652e50d"
+eventIDs <- read.csv(event_id_url,stringsAsFactors = FALSE)
 
 # add new eventIDs to event table
-event <- left_join(event,new_eventIDs,by="fieldNumber")
+event <- left_join(event,eventIDs)
 
 
 #.................................................................................
 # 4. DwC-mapping events  
 #................................................................................
 
-
-
-# Events........................................................................
-
 # add lat/long
-lake_centroids <- read.csv("./data/raw_data/lakes_NO_centroids.csv",stringsAsFactors = FALSE) 
-event$tmp_vatnLnr <- as.numeric(str_split_fixed(event$locationID,":",n=3)[,3]) # create tmp variable with vatnLnr
-event <- left_join(event,lake_centroids,by=c("tmp_vatnLnr" = "vatnLnr"))
+lake_centroids_url <- "https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/5c76e109-dc2b-4a0b-98ee-dc65dd77e169f1b7589f-bfa2-4c75-bd0b-1aa13d2ec3bf820dbc79-0bd3-4252-9e89-935498b3445a"
+lake_centroids <- read.csv(lake_centroids_url,stringsAsFactors = FALSE) 
+
+event <- left_join(event,lake_centroids)
 
 # adding terms with values replicated throughout dataset
 event$year <- "1918"
@@ -83,7 +104,7 @@ event$countryCode <- "NO"
 # event$coordinateUncertaintyInMeters <- May be estimated as a function of maximum lake fetch?
 event$geodeticDatum <- "EPSG:4326"
 event$footprintSRS <- 'GEOGCS["GCS_WGS_1984", DATUM["D_WGS_1984", SPHEROID["WGS_1984",6378137,298.257223563]], PRIMEM["Greenwich",0], UNIT["Degree",0.0174532925199433]]'
-event$georeferenceProtocol <- "Occurrence represent presence/absence in waterbody. Coordinates are centroid of waterbody. Source of geometries are The Norwegian Water Resources and Energy Directorate"
+event$georeferenceProtocol <- "Occurrence represent presence/absence in a given waterbody. Coordinates are centroid of that waterbody. Source of geometries are The Norwegian Water Resources and Energy Directorate, innsjødatabasen"
 event$institutionCode <- "NTNU-VM"
 event$collectionCode <- "LFI"
 
@@ -95,6 +116,10 @@ event$eventID <- paste0("urn:uuid:",event$eventID)
 # 5. DwC-mapping occurrences  
 #................................................................................
 
+# create base of occurrence data table from inndata
+occurrence <- inndata %>%
+  select(-locality,-project,-verbatimElevation,-footprintWKT,-locationID)
+
 # Add eventIDs
 occurrence <- left_join(occurrence,event[c("eventID","fieldNumber")])
 
@@ -102,7 +127,7 @@ occurrence <- left_join(occurrence,event[c("eventID","fieldNumber")])
 occurrence$occurrenceID <- paste0("urn:uuid:",occurrence$id)
 
 # Resolve scientific names.......................................................
-datasetKeyUUID="a6c6cead-b5ce-4a4e-8cf5-1542ba708dec" # using Artsnavnebasen as source
+
 
 # first clean up name list in input data with some known errors, and 
 # store orginal names in dwc:taxonRemarks
@@ -121,141 +146,150 @@ occurrence <- occurrence %>%
       scientificName == "Gastoresteus pingitius" ~ "Pungitius pungitius",
       scientificName == "Phoxinus aphya" ~ "Phoxinus phoxinus",
       scientificName == "Petromyzon fluviatilis" ~ "Lampetra fluviatilis",
+      scientificName == "Cyprinus carassius" ~ "Carassius carassius",
+      scientificName == "Micropterus salmonides" ~ "Micropterus salmoides",
       scientificName == "æøå" ~ "",
       scientificName == "-" ~ "",
       TRUE ~ scientificName
     )
   ) 
 
-occurrence$scinames <- occurrence$scientificName
+occurrence <- occurrence %>%
+  rename(scinames=scientificName)
 
 scinames <- unique(occurrence$scinames) # vector of unique sci-names in dataset
 scinames <- scinames[!scinames==""]
 
-resolved_names <- data.frame() # empty data.frame to put output from resolved names in
+# Run below if changing taxon list... and update remove repro
 
-for(i in 1:length(scinames)){
-  output <- name_lookup(query=scinames[i],datasetKey = datasetKeyUUID,limit=1,
-                        return="data")
-  resolved_names <- bind_rows(resolved_names,as.data.frame(output))
-}
-resolved_names$scinames <- scinames
-resolved_names$taxonRank <- resolved_names$rank
+#source("./R/f_name_resolving.R") # in the following, use artsnavnebasen as primary source, if not match, then use GBIF backbone
+#resolved_names <- f_name_resolving(scinames)
+#write.csv(resolved_names,"./data/mapped_data/resolved_names.csv",row.names = FALSE)
 
-resolved_names <- resolved_names %>% 
-  select(scientificName,kingdom,phylum,order,family,
-         genus,taxonID,scinames,taxonRank)
+resolved_names_URL <- "https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/0fda1811-3b47-4acc-8547-2171054db6232340604d-a7a4-4c04-8757-9624cc118b64102065ea-c600-468d-a133-870937fc8fc3"
+resolved_names <- read.csv(resolved_names_URL, stringsAsFactors = FALSE)
+
+occurrence <- left_join(occurrence,resolved_names,by="scinames")
 
 
-occurrence <- left_join(occurrence,resolved_names)
+# clean occurrence table
+occurrence <- occurrence %>% 
+  dplyr::select(eventID,occurrenceID,scientificName,taxonRank, 
+         kingdom, phylum, order, genus, family, canoncialName=scinames,
+         verbatimLocality,
+         locationRemarks,introduced) %>% 
+  filter(!is.na(scientificName))
 
-# Add terms 
+occurrence$occurrenceStatus <- "present"
+
+#.................................................................................
+# 5. Add absence information 
+#
+# NB! need to be sure all lakes have been transcribed before exectuting
+# Current implementation is experimental - adjust taxonomic_scope to restrict
+#................................................................................
+
+# load absence_occurrenceIDs
+URL <- "https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/c3ec5565-caf5-4304-bc49-1b2d9f0f6c10883ae673-3e5f-4ee8-8f93-01eb381baeec49ff9e69-c788-42a4-87dc-ebb4fd839efa"
+temp <- tempdir()
+download.file(URL,paste0(temp,"/absence_occurrenceIDs.csv"))
+absence_occurrenceIDs <- read.csv(paste0(temp,"/absence_occurrenceIDs.csv"),stringsAsFactors = FALSE)
+
+# add prefix to eventID and occurrenceID
+absence_occurrenceIDs$eventID <- paste0("urn:uuid:",absence_occurrenceIDs$eventID)
+absence_occurrenceIDs$occurrenceID <- paste0("urn:uuid:",absence_occurrenceIDs$occurrenceID)
+
+# filter out absence_occurrenceIDs which have a registred eventID
+absence_occurrenceIDs2 <- absence_occurrenceIDs %>%
+  filter(eventID %in% event$eventID)
+
+# rename sciname to canonicalName and add scientificName
+absence_occurrenceIDs2 <- absence_occurrenceIDs2 %>%
+  rename(canoncialName=scinames)
+
+# remove existing occurrences (presences from occurrences)
+absence_occurrenceIDs2 <- left_join(absence_occurrenceIDs2,occurrence[c("eventID","canoncialName","occurrenceStatus")])
+absence_occurrenceIDs2 <- absence_occurrenceIDs2 %>%
+  filter(is.na(occurrenceStatus))
+
+
+##############################################################################################
+# add missing taxon information to absencedata 
+resolved_names2 <- resolved_names %>%
+  rename(canoncialName=scinames)
+absence_occurrenceIDs2 <- left_join(absence_occurrenceIDs2,resolved_names2)
+
+# declear absence data as absence 
+absence_occurrenceIDs2$occurrenceStatus <- "absent"
+
+# add verbatimLocality and locationRemarks data
+
+occurrence$verbatimLocality[occurrence$verbatimLocality==""] <- NA
+occurrence$locationRemarks[occurrence$locationRemarks==""] <- NA
+tmp <- occurrence %>%
+  select(eventID,verbatimLocality,locationRemarks) %>%
+  group_by(eventID) %>%
+  summarize(verbatimLocality = paste0(na.omit(unique(verbatimLocality)), collapse = " | "),
+         locationRemarks = paste0(na.omit(unique(locationRemarks)), collapse = " | ")) 
+  
+
+absence_occurrenceIDs2 <- left_join(absence_occurrenceIDs2,tmp)
+
+# merge absences with occurrence table
+
+occurrence3 <- bind_rows(occurrence,absence_occurrenceIDs2)        
+occurrence <- occurrence3
+
+
+
+
+#...................................................................................
+# 6. Add terms and clean occurrence table
+#.....................................................................................
 occurrence$basisOfRecord <- "HumanObservation"
 occurrence$recordedBy <- "Hartvig Huitfeldt-Kaas"
-occurrence$occurrenceStatus <- "present"
+
 occurrence$informationWithheld <- "Name of person transcribing the record witheld due to data privacy legislations"
 
 occurrence$bibliographicCitation  <- paste0("Huitfeldt-Kaas, H. (1918). Ferskvandsfiskenes utbredelse og indvandring i Norge: Med et tillæg om krebsen. Kristiania: Centraltrykkeriet. In Norwegian. URL:https://urn.nb.no/URN:NBN:no-nb_digibok_2006120500031. Page: ",
                                             occurrence$currentPage)
 occurrence$occurrenceRemarks <- occurrence$annotationRemarks
-  
-  
+
 occurrence$establishmentMeans <- ifelse(occurrence$introduced=="on",
-                                        "introduced","native")
+                                       "introduced","native")
+
+occurrence$recordedBy <- "Hartvig Huitfeldt-Kaas"
+occurrence$collectionCode <- "LFI"
+
 # clean occurrence table
-occurrence2 <- occurrence %>% 
-  dplyr::select(eventID,occurrenceID,scientificName, taxonID, taxonRank, 
-         kingdom, phylum, order, genus, family,
-         basisOfRecord,recordedBy,verbatimLocality,
-         locationRemarks,bibliographicCitation,
-         occurrenceStatus,establishmentMeans,
-         informationWithheld,occurrenceRemarks) %>% 
-  filter(!is.na(scientificName))
+occurrence <- occurrence %>% 
+  dplyr::select(eventID,occurrenceID,scientificName,taxonRank, 
+                kingdom, phylum, order, genus, family,
+                basisOfRecord,recordedBy,verbatimLocality,
+                locationRemarks,bibliographicCitation,
+                occurrenceStatus,establishmentMeans,
+                informationWithheld,recordedBy,collectionCode) %>% 
+  filter(!is.na(scientificName)) 
+
 
 
 
 #.................................................................................
-# 6. Add absence information 
-#
-# NB! need to be sure all lakes in an area have been transcribed before exectuting
-# Current implementation is on test-basis - adjust taxonomic_scope to restrict
+# X. check, clean up, save and exit  
 #................................................................................
 
-# First define taxonomic_scope and generate absence information
-# stored in data.frame "occ_absent"
-taxonomic_scope <- data.frame(scientificName=c(unique(occurrence2$scientificName)))
-taxonomic_scope$scientificName <- as.character(taxonomic_scope$scientificName)
+event2 <- event[duplicated(event$eventID)==FALSE,] # some duplicted eventIDs due to test-records
+occurrence2 <- occurrence[duplicated(occurrence$occurrenceID)==FALSE,] # some duplicted eventIDs due to test-records
+event2 <- event[event$eventID!="urn:uuid:NA",]
+occurrence2 <- occurrence[occurrence$eventID!="urn:uuid:NA",]
 
-occurrence_tmp <- occurrence2 %>%
-  dplyr::select(taxonID, scientificName, taxonRank, 
-         kingdom, phylum, order, genus, family,
-         basisOfRecord,recordedBy,
-         informationWithheld) %>%
-  distinct()
-occ_absent <- left_join(taxonomic_scope,occurrence_tmp,by="scientificName")
-occ_absent <- bind_rows(replicate(length(event$eventID), occ_absent, simplify = FALSE))
-
-occ_absent$eventID <- sort(rep(event$eventID,dim(taxonomic_scope)[1]))
-occ_absent$occurrenceStatus <- "absent"                             
-
-# Check for existing occurrenceIDs for absences.
-# Relevant when adding new species to taxonomic_scope or
-# adding new events (= new lakes) 
-occurrenc_absence_IDs <- read.csv("./data/raw_data/occurrenc_absence_IDs.csv",stringsAsFactors=FALSE)
-eventID_existing <- occurrenc_absence_IDs$eventID
-scientificName_existing <- occurrenc_absence_IDs$scientificName
-occurrenceID_existing <- occurrenc_absence_IDs$occurrenceID
-
-new_occurrence_IDs <- as.character()
-new_event_IDs <- as.character()
-new_sciNames <- as.character()
-
-for(i in 1:dim(occ_absent)[1]){
-  if(occ_absent$scientificName[i] %in% scientificName_existing==FALSE |
-     occ_absent$eventID[i] %in% eventID_existing==FALSE) {
-     
-    new_occurrence_IDs <- append(new_occurrence_IDs,
-                                 paste0("urn:uuid:",UUIDgenerate()))
-    new_event_IDs <- append(new_event_IDs,occ_absent$eventID[i])
-    new_sciNames <- append(new_sciNames,occ_absent$scientificName[i])
-  }
-}
-
-new_occurrence_absenceIDs <- data.frame(eventID=new_event_IDs,
-                             occurrenceID=new_occurrence_IDs,
-                             scientificName=new_sciNames)
-
-occurrenc_absence_IDs <- bind_rows(occurrenc_absence_IDs,new_occurrence_absenceIDs)
-
-# Add occurrenceID to occ_absent 
-occ_absent <- left_join(occ_absent,occurrenc_absence_IDs)
-
-# store occurrenceIDs, sciNames and eventIDs for later lookup
-occurrenc_absence_IDs <- occ_absent %>%
-  dplyr::select(occurrenceID,eventID,scientificName)
-
-# merge absences with occurrence table, first filter
-# away those existing in occurrence table
-
-occ_absent$tmp <- paste0(occ_absent$eventID,occ_absent$scientificName)
-tmp_exist <- paste0(occurrence$eventID,occurrence$scientificName)  
-
-occ_absent <- occ_absent %>% 
-  filter(!tmp %in% tmp_exist) %>%
-  select(-tmp)
-
-occurrence2 <- bind_rows(occurrence2,occ_absent)        
+dim(event2)
+length(unique(event2$eventID))
+dim(occurrence2)
+length(occurrence2$occurrenceID[occurrence2$eventID %in% event2$eventID])
+length(unique(occurrence2$occurrenceID))
 occurrence <- occurrence2
-#.................................................................................
-# X. save and exit  
-#................................................................................
-
-
-
-# update ID files (remember to push to repository if doing this in producion line)
-write.csv(new_eventIDs,"./data/raw_data/eventIDs.csv",row.names = FALSE)
-write.csv(occurrenc_absence_IDs,"./data/raw_data/occurrenc_absence_IDs.csv",row.names = FALSE)
-
+event <- event2
 
 # Save mapped data, create folder "./data/mapped_data" if not existing
 
