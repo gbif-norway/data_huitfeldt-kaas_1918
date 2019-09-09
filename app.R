@@ -10,10 +10,40 @@ library(sf)
 library(leaflet)
 library(stringr)
 library(DT)
+library(rio)
 
-HK_sf <- readRDS(file = "./data/mapped_data/HK_sf.rds")
+#-----------------------------------------------------------
+# Download and pre-process data 
+#---------------------------------------------------------
+# 1. download DWC-A and extract occurrence and events
+URL <- "https://gbif.vm.ntnu.no/ipt/archive.do?r=huitfeldt-kaas_1918" # latest version 
+temp <- tempdir()
+download.file(URL,paste0(temp,"/huitfeldt-kaas_1918.zip"))
+unzip(zipfile=paste0(temp,"/huitfeldt-kaas_1918.zip"),exdir=temp)
+occurrence <- rio::import(paste0(temp,"/occurrence.txt"))
+event <- rio::import(paste0(temp,"/event.txt"))
+
+# 2. flatten file and remove occurrences missing coordinates (caused by lakes missing in gazzeteer) and footprintSRS (large character vector)
+HK_data_flattend <- left_join(occurrence,event,by="eventID") %>%
+  filter(!is.na(decimalLatitude) | !is.na(decimalLongitude)) %>%
+  select(-footprintSRS)
+
+# 3. add vatnLnr as variable for convinience viewing
+HK_data_flattend$tmp_vatnLnr <- as.integer(str_split_fixed(HK_data_flattend$locationID,":",n=3)[,3])
+
+# 3. select variables for viewing in map... 
+HK_data_tmp <- HK_data_flattend %>% select(decimalLongitude,decimalLatitude,occurrenceID,eventID,
+                                           genus,scientificName,bibliographicCitation,establishmentMeans,
+                                           occurrenceStatus,locationRemarks,tmp_vatnLnr,verbatimLocality,
+                                           establishmentMeans,locality,bibliographicCitation)
+
+HK_sf = st_as_sf(HK_data_tmp, coords = c("decimalLongitude", "decimalLatitude"), 
+                 crs = 4326)
+
 HK_species <- as.character(unique(HK_sf$scientificName))
 HK_species <- HK_species[HK_species!=""]
+
+
 
 #-----------------------------------------------------------
 # Define UI for application 
@@ -90,7 +120,7 @@ server <- function(input, output) {
                               "<br><i>",HK_sf_tmp$scientificName," - ",HK_sf_tmp$fravaer,"</i>",
                               "<br><i>Vatn_lnr: </i>",HK_sf_tmp$tmp_vatnLnr,
                               "<br><i>Orginalt lokalitetsnavn: </i>",HK_sf_tmp$verbatimLocality,
-                              "<br><i>Kommentar lokalitet: </i>",HK_sf_tmp$occurrenceRemarks,
+                              "<br><i>Kommentar lokalitet: </i>",HK_sf_tmp$locationRemarks,
                               "<br><i>Siderefferanse: </i>",HK_sf_tmp$side,
                               "<br><i>observasjonsID: </i>",HK_sf_tmp$occurrenceID,
                               "<br><strong>Klikk <a href=","https://goo.gl/forms/M9mZ5FtORB97K6dx2 target=blank",">her</a> for og raportere feil</strong>"),
